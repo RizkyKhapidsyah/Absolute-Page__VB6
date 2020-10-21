@@ -1,0 +1,93 @@
+<html><head><title>AbsolutePage</title>
+<body bgcolor="white">
+
+<font color="red" size=+3>AbsolutePage &amp; PageSize</font>&nbsp;<font color="black" size=+3> to Fragment Data Streams</font>
+<br>
+<table width="600">
+<tr>
+<td>
+<p>One of the challenges in Web Development is getting a database recordset
+with a high volume of records and not overwhelm the user with inforamation.  Streaming all the records back to the client
+browser uses up alot of bandwidth and user time.</p>
+<p>A better way is to break the recordset up into pages and stream only a single page back to the client, allowing for a next and previous capability.
+Using the <font color="blue">ADO PageSize and AbsolutePage</font> Methods the recordset now can be liken to a series of
+virtual pages containing <font color="blue">PageSize</font> number of records, with the <font color="blue">AbsolutePage</font>
+ as an index into the recordset.</p>
+
+<p>After setting the <font color="blue">AbsolutePage</font> a counter is required while moving through the recordset to ensure the 
+number of returning records does not exceed the <font color="blue">PageSize</font></p>
+
+</td>
+</tr>
+</table>
+<pre>
+Option Explicit
+Dim db As Connection
+Dim lCurrentPage As Long
+
+<font color="blue">Private Sub cmdNext_Click()</font>
+    lCurrentPage = lCurrentPage + 1
+    Call LoadListBox(lCurrentPage)
+<font color="blue">End Sub</font>
+
+<font color="blue">Private Sub cmdPrevious_Click()</font>
+    If lCurrentPage > 1 Then
+        lCurrentPage = lCurrentPage - 1
+        Call LoadListBox(lCurrentPage)
+    End If
+<font color="blue">End Sub</font>
+
+<font color="blue">Private Sub Form_Load()</font>
+    
+    Set db = New Connection
+    db.CursorLocation = adUseClient
+    db.Open "PROVIDER=Microsoft.Jet.OLEDB.3.51;Data Source=d:\api\absolutepage\test.mdb;"
+
+    lCurrentPage = 1
+    Call LoadListBox(lCurrentPage)
+
+<font color="blue">End Sub</font>
+<font color="blue">Private Sub LoadListBox(lPage As Long)</font>
+    Dim adoPrimaryRS As ADODB.Recordset
+    Dim lPageCount As Long
+    Dim nPageSize As Integer
+    Dim lCount As Long
+
+    nPageSize = 7
+    Set adoPrimaryRS = New Recordset
+    adoPrimaryRS.Open "select * from numbers", db, adOpenStatic, adLockOptimistic
+
+    adoPrimaryRS.PageSize = nPageSize
+    lPageCount = adoPrimaryRS.PageCount
+    If lCurrentPage > lPageCount Then
+        lCurrentPage = lPageCount
+    End If
+    
+    txtPage.Text = lPage
+    
+    adoPrimaryRS.AbsolutePage = lCurrentPage
+    
+    With lbxRecords
+        .Clear
+        lCount = 0
+        Do While Not adoPrimaryRS.EOF
+            .AddItem adoPrimaryRS("aNumber")
+            lCount = lCount + 1
+            If lCount = nPageSize Then
+                Exit Do
+            End If
+            adoPrimaryRS.MoveNext
+        Loop
+        
+    End With
+<font color="blue">End Sub</font>
+
+<font color="blue">Private Sub Form_Unload(Cancel As Integer)</font>
+    If Not db Is Nothing Then
+        db.Close
+    End If
+    Set db = Nothing
+<font color="blue">End Sub</font>
+</pre>
+</body>
+</html>
